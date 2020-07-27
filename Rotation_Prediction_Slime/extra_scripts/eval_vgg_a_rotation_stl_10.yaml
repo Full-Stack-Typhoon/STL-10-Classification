@@ -1,0 +1,78 @@
+TRAIN:
+  DATA_SOURCES: [disk]
+  DATA_PATHS: ["data/train_images_0.npy"]
+  LABEL_SOURCES: [disk]
+  LABEL_PATHS: ["data/train_labels_0.npy"]
+  MMAP_MODE: True
+  DEFAULT_GRAY_IMG_SIZE: 96
+  BATCH_SIZE: 64
+  TRANSFORMS: [
+      ["ToTensor"],
+      ["Normalize", {"args": [[0.44671062, 0.43980984, 0.40664645], [0.26034098, 0.25657727, 0.27126738]]}],
+  ]
+
+TEST:
+  DATA_SOURCES: [disk]
+  DATA_PATHS: ["data/test_images.npy"]
+  LABEL_SOURCES: [disk]
+  LABEL_PATHS: ["data/test_labels.npy"]
+  MMAP_MODE: True
+  DEFAULT_GRAY_IMG_SIZE: 96
+  BATCH_SIZE: 32
+  TRANSFORMS: [
+    ["ToTensor"],
+    ["Normalize", {"args": [[0.44671062, 0.43980984, 0.40664645], [0.26034098, 0.25657727, 0.27126738]]}],
+  ]
+
+
+MODEL:
+  TRUNK:
+    TYPE: "vgg_a"
+    SHOULD_FLATTEN: False
+    LINEAR_FEAT_POOL_OPS: [
+        ["AvgPool2d", [[5, 5], 5, 2]],
+        ["AvgPool2d", [[8, 8], 4, 1]],
+        ["AvgPool2d", [[7, 7], 3, 0]],
+        ["AvgPool2d", [[4, 4], 2, 0]],
+        ["AvgPool2d", [[3, 3], 1, 0]],
+    ]
+  HEAD:
+    PARAMS: [
+      ["eval_mlp", {"in_channels": 64, "dims": [6400, 10]}],
+      ["eval_mlp", {"in_channels": 128, "dims": [3200, 10]}],
+      ["eval_mlp", {"in_channels": 256, "dims": [1024, 10]}],
+      ["eval_mlp", {"in_channels": 512, "dims": [2048, 10]}],
+      ["eval_mlp", {"in_channels": 512, "dims": [512, 10]}],
+    ]
+    APPLY_BATCHNORM: True
+  FEATURE_EVAL_MODE: True
+  EVAL_FEATURES: ["pool1", "pool2", "pool3", "pool4", "pool5"]
+
+TRAINER:
+  TRAIN_LOOP: "generic_train_loop"
+  TRAIN_METERS: {"accuracy_list": {"num_list": 5, "topk": [1]}, "loss": {}}
+  EVAL_LOOP: "generic_eval_loop"
+  EVAL_METERS: {"accuracy_list": {"num_list": 5, "topk": [1]}, "loss": {}}
+  MAX_EPOCHS: 120
+  NUM_WORKERS: 45
+
+
+OPTIMIZER:
+  TYPE: "sgd"
+  BASE_LR: 0.01
+  MOMENTUM: 0.9
+  WEIGHT_DECAY: 0.0005
+  DAMPENING: 0
+  NESTEROV: True
+
+SCHEDULER:
+  TYPE: "step"
+  STEP_SIZE: 30
+  GAMMA: 0.1
+
+CHECKPOINT:
+  DIR: "checkpoint_supervised_training"
+  FEATURE_EXTRACTOR_PARAMS: "checkpoint_unsupervised_training/model_epoch_0043.pyth"
+
+VERBOSE: True
+

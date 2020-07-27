@@ -1,0 +1,63 @@
+TRAIN:
+  DATA_SOURCES: [disk]
+  DATA_PATHS: ["path/to/train_images_0.npy"]
+  LABEL_SOURCES: [disk]
+  LABEL_PATHS: ["path/to/train_labels_0.npy"]
+  BATCH_SIZE: 32
+  MMAP_MODE: True
+  DEFAULT_GRAY_IMG_SIZE: 96
+  TRANSFORMS: [
+      ["RandomHorizontalFlip"],
+      ["ToTensor"],
+      ["Normalize", {"args": [[0.44671062, 0.43980984, 0.40664645], [0.26034098, 0.25657727, 0.27126738]]}],
+  ]
+
+TEST:
+  DATA_SOURCES: [disk]
+  DATA_PATHS: ["path/to/test_images.npy"]
+  LABEL_SOURCES: [disk]
+  LABEL_PATHS: ["path/to/test_labels.npy"]
+  BATCH_SIZE: 32
+  MMAP_MODE: True
+  DEFAULT_GRAY_IMG_SIZE: 96
+  TRANSFORMS: [
+    ["ToTensor"],
+    ["Normalize", {"args": [[0.44671062, 0.43980984, 0.40664645], [0.26034098, 0.25657727, 0.27126738]]}],
+  ]
+
+
+MODEL:
+  TRUNK:
+    TYPE: "vgg_a"
+  HEAD:
+    PARAMS: [["eval_mlp", {"in_channels": 512, "dims": [4608, 10]}]]
+    APPLY_BATCHNORM: True
+  FEATURE_EVAL_MODE: False
+  EVAL_FEATURES: []
+
+# Training Parameters
+TRAINER:
+  # CRITERION: "cross_entropy"
+  TRAIN_LOOP: "generic_train_loop"
+  TRAIN_METERS: {"accuracy": {"topk": [1]}, "loss": {}}
+  EVAL_LOOP: "generic_eval_loop"
+  EVAL_METERS: {"accuracy": {"topk": [1]}, "loss": {}}
+  MAX_EPOCHS: 90
+
+OPTIMIZER:
+  TYPE: "sgd"
+  BASE_LR: 0.01
+  MOMENTUM: 0.9
+  WEIGHT_DECAY: 0.0001
+  DAMPENING: 0
+  NESTEROV: True
+
+SCHEDULER:
+  TYPE: "step"
+  STEP_SIZE: 30
+  GAMMA: 0.1
+
+CHECKPOINT:
+  DIR: "./checkpoint_no_unsupervised"
+
+VERBOSE: True
